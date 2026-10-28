@@ -2,6 +2,7 @@ import json
 import time
 import urllib.request
 import urllib.error
+from http.client import HTTPException
 
 base = 'http://localhost:8000'
 for attempt in range(60):
@@ -9,7 +10,7 @@ for attempt in range(60):
         with urllib.request.urlopen(base+'/health', timeout=2) as response:
             assert json.load(response)['model_loaded']
         break
-    except (urllib.error.URLError, TimeoutError):
+    except (OSError, HTTPException):
         time.sleep(1)
 else:
     raise RuntimeError('API did not become ready')
