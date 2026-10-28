@@ -1,0 +1,29 @@
+name: ML API CI
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test-and-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Test saved model and API
+        run: python -m pytest -q
+      - name: Build Docker image
+        run: docker build -t iris-api:ci .
+      - name: Run API endpoints through Docker
+        run: |
+          docker run -d --name iris-api -p 8000:8000 iris-api:ci
+          python scripts/smoke_test.py
+      - name: Container logs
+        if: always()
+        run: docker logs iris-api || true
+      - name: Stop container
+        if: always()
+        run: docker rm -f iris-api || true
